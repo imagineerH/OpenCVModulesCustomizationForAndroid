@@ -14,7 +14,7 @@ set(CMAKE_VERBOSE_MAKEFILE on)
 set(libs "${CMAKE_SOURCE_DIR}/src/main/jniLibs")
 
 # Uncomment the following line if your source code need OpenCV headers
-#include_directories(${HOME}/OpenCV-android-sdk/sdk/native/jni/include)
+include_directories(/Users/zh/OpenCV-android-sdk/sdk/native/jni/include)
 
 #------------------------------- import OpenCV modules ------------------------------------#
 # Create imported target opencv_core
@@ -222,13 +222,15 @@ set_target_properties(libprotobuf PROPERTIES
 
 #------------------------------- define library name ------------------------------------#
 add_library( # Sets the name of the library.
-             opencv_java3 # keep the original name in convenience of use
+             AITrans
 
              # Sets the library as a shared library.
              SHARED
 
              # Provides a relative path to your source file(s).
-             ${CMAKE_SOURCE_DIR}/src/main/cpp/placeholder.cpp # empty code
+             ${CMAKE_SOURCE_DIR}/src/main/cpp/Tracking/src/color_palette.cpp
+             ${CMAKE_SOURCE_DIR}/src/main/cpp/Tracking/src/flow_tracker.cpp
+             ${CMAKE_SOURCE_DIR}/src/main/cpp/Tracking/src/graphics_generator.cpp
               )
 
 # Searches for a specified prebuilt library and stores the path as a
@@ -249,7 +251,7 @@ find_library( # Sets the name of the path variable.
 # build script, prebuilt third-party libraries, or system libraries.
 
 target_link_libraries( # Specifies the target library.
-                       opencv_java3
+                       AITrans
 
                        # Links the target library to the log library
                        # included in the NDK.
@@ -263,10 +265,11 @@ target_link_libraries( # Specifies the target library.
                        # core module and its corresponding dependencies
                        # will be packed with all symbols
                        "-Wl,--whole-archive"
-                       opencv_core
+
                        "-Wl,--no-whole-archive"
 
                        # the following modules will not be packed
+                       opencv_core
                        opencv_flann
                        opencv_imgproc
                        opencv_ml
@@ -287,4 +290,9 @@ target_link_libraries( # Specifies the target library.
                        # don't need link third-party dependencies directly,
                        # they will be linked into target library according
                        # to OpenCV modules which are used
+
+                       # project-level use
+                       jnigraphics
+                       android
+                       log
                         )
