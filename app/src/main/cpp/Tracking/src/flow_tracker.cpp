@@ -514,6 +514,10 @@ void FlowTracker::end_track() {
 
 //排序 是这个几个vector 都按照 track_cnt 值进行排序
 void FlowTracker::set_mask() {
+    if(mask.rows != forw_img.rows || mask.cols != forw_img.cols) {
+        mask = cv::Mat(forw_img.rows, forw_img.cols, CV_8UC1);
+    }
+
     mask.setTo(255);
     std::vector<std::pair<int, cv::Point2f>> cnt_pts_id;
     for (unsigned int i = 0; i < forw_pts.size(); i++) {
