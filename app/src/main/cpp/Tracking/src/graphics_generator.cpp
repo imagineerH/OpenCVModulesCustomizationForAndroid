@@ -95,11 +95,23 @@ namespace generator {
         // construct origin bitmap matrix and resize
         cv::Mat originImgMat;
         bitmapToMat(env, bitmap, originImgMat);
-        cv::resize(originImgMat, originImgMat, cv::Size2f(xMax, yMax));
+        bool resizeSuccess = false;
+        try {
+            cv::resize(originImgMat, originImgMat, cv::Size2f(xMax, yMax));
+            resizeSuccess = true;
+        } catch (const cv::Exception &e) {
+            // do nothing
+        } catch (...) {
+            // do nothing
+        }
 
         // generate target bitmap matrix
         cv::Mat targetMat;
-        cv::warpPerspective(originImgMat, targetMat, homographyMat, cv::Size2f(xMax, yMax));
+        if (resizeSuccess) {
+            cv::warpPerspective(originImgMat, targetMat, homographyMat, cv::Size2f(xMax, yMax));
+        } else {
+            cv::warpPerspective(originImgMat, targetMat, homographyMat, originImgMat.size.operator()());
+        }
 
         jint *params_ptr = env->GetIntArrayElements(params, NULL);
         params_ptr[0] = targetMat.cols;
