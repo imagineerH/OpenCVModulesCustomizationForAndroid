@@ -16,8 +16,8 @@ const int BLUR_K = 15;
 const float PINNED_ALPHA = 0.5f;
 const int STRUCTURING_ELEMENT_SIZE = 12;
 const int IN_PAINT_RADIUS = 3;
-
-
+// 根据颜色亮度判断是深色背景还是浅色背景的阈值
+const double BRIGHTNESS_THRESHHOLD = 255 * 0.3;
 
 //#define CPU_SETSIZE 1024
 //#define __NCPUBITS  (8 * sizeof (unsigned long))
@@ -235,6 +235,22 @@ namespace palette {
                (((int) BGR[0] & 0xFF) << 0); // B
     }
 
+    /**
+     * 根据图片背景色的亮度判断是深色背景还是浅色背景，决定文字颜色
+     * @param vec 背景色
+     * @return 深色背景：白色，浅色背景：黑色
+     */
+    int decide_foreground_color_by_background_brightness(cv::Vec3f vec) {
+        double luminance = (0.2126 * vec[2] + 0.7152 * vec[1] + 0.0722 * vec[0]);
+        if (luminance < BRIGHTNESS_THRESHHOLD) {
+            // 白色文字
+            return 0xFFFFFFFF;
+        } else {
+            // 黑色文字
+            return 0xFF000000;
+        }
+    }
+
     // Define JNI interface.
 //    JNIEXPORT jintArray JNICALL
 //    Java_com_baidu_graph_tracker_Tracker_extractColors(JNIEnv *env,
@@ -332,10 +348,16 @@ namespace palette {
         cvtColor(matResult, tmp, CV_BGRA2BGR565);
 
         jint *params_ptr = env->GetIntArrayElements(params, NULL);
+        // 对应Java层需要创建的bitmap的width
         params_ptr[0] = matResult.cols;
+        // 对应Java层需要创建的bitmap的height
         params_ptr[1] = matResult.rows;
+        // 图片的背景色
         params_ptr[2] = bgr_to_int(graphics.colors[0]);
-        params_ptr[3] = bgr_to_int(graphics.colors[1]);
+        // 图片的前景色（即翻译文字的颜色），若是深色背景则文字颜色为白色，反之文字为黑色
+//        params_ptr[3] = bgr_to_int(graphics.colors[1]);
+        params_ptr[3] = decide_foreground_color_by_background_brightness(graphics.colors[0]);
+
         env->ReleaseIntArrayElements(params, params_ptr, 0);
 
         int size = tmp.rows * tmp.cols * tmp.channels();

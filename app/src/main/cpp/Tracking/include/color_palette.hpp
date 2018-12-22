@@ -90,6 +90,14 @@ namespace palette {
     // Convert BGR color to ARGB integer.
     int bgr_to_int(cv::Vec3f &BGR);
 
+    /**
+     * 根据图片背景色的亮度判断是深色背景还是浅色背景，决定文字颜色
+     * @param vec 背景色
+     * @return 深色背景：白色，浅色背景：黑色
+     */
+    int decide_foreground_color_by_background_brightness(cv::Vec3f vec);
+
+
 //    int encode_mat_to_jpg_bytes(cv::Mat img, unsigned char *&data, int &len);
 
 

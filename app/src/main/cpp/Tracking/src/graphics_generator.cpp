@@ -5,7 +5,7 @@
 
 namespace generator {
     // Define JNI interface.
-    JNIEXPORT void JNICALL
+    JNIEXPORT jboolean JNICALL
     Java_com_baidu_graph_tracker_Tracker_yuvBytesToRGBBitmap(JNIEnv *env,
                                                              jclass thiz,
                                                              jbyteArray yuv,
@@ -15,12 +15,20 @@ namespace generator {
                                                              jobject bitmap
 
     ) {
+        // 防止图片过大造成内存溢出的crash
+        if ((width * height) >= _max_img_size) {
+            return static_cast<jboolean>(false);
+        }
+        if (scale > 1 && (width * scale * height * scale) >= _max_img_size) {
+            return static_cast<jboolean>(false);
+        }
         jbyte *data = env->GetByteArrayElements(yuv, 0);
         cv::Mat yuvMat(height + height / 2, width, CV_8UC1, (uchar *) data);
         cv::Mat rgbMat(width, height, CV_8UC3);
         cv::cvtColor(yuvMat, rgbMat, CV_YUV420sp2RGB, 3);
         cv::resize(rgbMat, rgbMat, cv::Size(width * scale, height * scale));
         matToBitmap(env, rgbMat, bitmap);
+        return static_cast<jboolean>(true);
     }
 
     JNIEXPORT jbyteArray JNICALL
@@ -94,7 +102,13 @@ namespace generator {
 
         // construct origin bitmap matrix and resize
         cv::Mat originImgMat;
-        bitmapToMat(env, bitmap, originImgMat);
+        if (!bitmapToMat(env, bitmap, originImgMat)) {
+            return NULL;
+        }
+        if (xMax * yMax >= _max_img_size) {
+            return NULL;
+        }
+
         bool resizeSuccess = false;
         try {
             cv::resize(originImgMat, originImgMat, cv::Size2f(xMax, yMax));
@@ -183,7 +197,7 @@ namespace generator {
         }
     }
 
-    void bitmapToMat (JNIEnv *env, jobject bitmap, cv::Mat &dst) {
+    bool bitmapToMat (JNIEnv *env, jobject bitmap, cv::Mat &dst) {
         AndroidBitmapInfo info;
         void *pixels = 0;
 
@@ -194,6 +208,10 @@ namespace generator {
                       info.format == ANDROID_BITMAP_FORMAT_RGB_565);
             CV_Assert(AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0);
             CV_Assert(pixels);
+            if (info.width * info.height >= _max_img_size) {
+                return false;
+            }
+
             dst.create(info.height, info.width, CV_8UC4);
             if (info.format == ANDROID_BITMAP_FORMAT_RGBA_8888) {
                 //logd("nBitmapToMat: RGBA_8888 -> CV_8UC4");
@@ -206,20 +224,20 @@ namespace generator {
                 cvtColor(tmp, dst, CV_BGR5652RGBA);
             }
             AndroidBitmap_unlockPixels(env, bitmap);
-            return;
+            return true;
         } catch (const cv::Exception &e) {
             AndroidBitmap_unlockPixels(env, bitmap);
             //loge("nBitmapToMat caught cv::Exception: %s", e.what());
             jclass je = env->FindClass("org/opencv/core/CvException");
             if (!je) je = env->FindClass("java/lang/Exception");
             env->ThrowNew(je, e.what());
-            return;
+            return false;
         } catch (...) {
             AndroidBitmap_unlockPixels(env, bitmap);
             //loge("nBitmapToMat caught unknown exception (...)");
             jclass je = env->FindClass("java/lang/Exception");
             env->ThrowNew(je, "Unknown exception in JNI code {nBitmapToMat}");
-            return;
+            return false;
         }
     }
 

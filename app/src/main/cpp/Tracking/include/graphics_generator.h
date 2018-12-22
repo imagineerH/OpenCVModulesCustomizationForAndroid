@@ -35,8 +35,11 @@ extern "C" {
 #endif
 
 namespace generator {
+
+    static int _max_img_size = 2500 * 1080 * 5;
+
     // Define JNI interface.
-    JNIEXPORT void JNICALL
+    JNIEXPORT jboolean JNICALL
     Java_com_baidu_graph_tracker_Tracker_yuvBytesToRGBBitmap(JNIEnv *env,
                                                              jclass thiz,
                                                              jbyteArray yuv,
@@ -59,7 +62,7 @@ namespace generator {
 
     void matToBitmap(JNIEnv * env, cv::Mat &src, jobject bitmap);
 
-    void bitmapToMat(JNIEnv *env, jobject bitmap, cv::Mat &dst);
+    bool bitmapToMat(JNIEnv *env, jobject bitmap, cv::Mat &dst);
 
 }
 
